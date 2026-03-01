@@ -65,7 +65,20 @@ final class RedBlackTree {
 
             Integer cmp = comparableCompare(key, current.key);
             if (cmp != null) {
-                current = (cmp < 0) ? current.left : current.right;
+                if (cmp < 0) {
+                    current = current.left;
+                    continue;
+                }
+                if (cmp > 0) {
+                    current = current.right;
+                    continue;
+                }
+
+                TreeNode<K, V> foundLeft = find(current.left, hash, key);
+                if (foundLeft != null) {
+                    return foundLeft;
+                }
+                current = current.right;
                 continue;
             }
 
@@ -107,7 +120,25 @@ final class RedBlackTree {
 
             Integer cmp = comparableCompare(key, current.key);
             if (cmp != null) {
-                lastCompare = cmp;
+                if (cmp == 0) {
+                    TreeNode<K, V> existing = find(current.left, hash, key);
+                    if (existing == null) {
+                        existing = find(current.right, hash, key);
+                    }
+                    if (existing != null) {
+                        V oldValue = existing.value;
+                        existing.value = value;
+                        return new InsertResult<>(true, oldValue, null, root);
+                    }
+
+                    int tie = tieBreakKeys(key, current.key);
+                    if (tie == 0) {
+                        tie = Integer.compare(System.identityHashCode(newNode), System.identityHashCode(current));
+                    }
+                    lastCompare = tie;
+                } else {
+                    lastCompare = cmp;
+                }
             } else {
                 int tie = tieBreakKeys(key, current.key);
                 if (tie == 0) {
@@ -152,7 +183,7 @@ final class RedBlackTree {
             }
 
             Integer cmp = comparableCompare(newNode.key, current.key);
-            if (cmp != null) {
+            if (cmp != null && cmp != 0) {
                 lastCompare = cmp;
             } else {
                 int tie = tieBreakKeys(newNode.key, current.key);
@@ -161,7 +192,6 @@ final class RedBlackTree {
                 }
                 lastCompare = tie;
             }
-
             current = (lastCompare < 0) ? current.left : current.right;
         }
 
